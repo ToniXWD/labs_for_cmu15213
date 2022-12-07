@@ -331,7 +331,7 @@ unsigned floatScale2(unsigned uf)
     {
       return 0x7f800000 | symbol;
     }
-    int newFrac = uf & 0x007fffff; // newFrac除frac部分外均为0
+    int newFrac = uf & 0x007fffff;           // newFrac除frac部分外均为0
     return (symbol | (exp << 23)) | newFrac; // 组合符号位、exp与frac部分
   }
 }
@@ -349,7 +349,34 @@ unsigned floatScale2(unsigned uf)
  */
 int floatFloat2Int(unsigned uf)
 {
-  return 2;
+  int exp = (uf & 0x7f800000) >> 23;
+  exp -= 127;
+  int symbol = uf >> 31;
+  int frac = uf & 0x007fffff + (1 << 23); // 真实的frac，包括1的部分,共24位
+  if (exp >= 31)                          // 溢出
+  {
+    return 0x80000000u;
+  }
+  if (exp < 0)
+  {
+    return 0;
+  }
+  if (exp >= 23)
+  {
+    frac = frac << (exp - 23);
+  }
+  else
+  {
+    frac = frac >> (23 - exp);
+  }
+  if (symbol == 1)
+  {
+    return ~frac + 1;
+  }
+  else
+  {
+    return frac;
+  }
 }
 /*
  * floatPower2 - Return bit-level equivalent of the expression 2.0^x
@@ -366,5 +393,22 @@ int floatFloat2Int(unsigned uf)
  */
 unsigned floatPower2(int x)
 {
-  return 2;
+  int INF = 0xff << 23;
+  if (x > 127)
+  {
+    return INF;
+  }
+  if (x < -149)
+  {
+    return 0;
+  }
+  if (x >= -126)
+  {
+    return (x + 127) << 23;
+  }
+  else
+  {
+    int n = -126-x;
+    return 1<<(23-n);
+  }
 }
