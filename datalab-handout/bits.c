@@ -171,11 +171,9 @@ int tmin(void)
  */
 int isTmax(int x)
 {
-  int tmin = x + 1;
-  int zero = (x | tmin) + 1;
-  int part1 = !zero;
-  int part2 = !!(x + 1);
-  return part1 & part2;
+  int tmin = x + 1;            // 如果x是0111..., 得到100000...;如果x是1111...，得到tmin=000...
+  int tmin_s = tmin << 1;      // 如果tmin为或者1000...或000...，得到tmin_s=0
+  return (!tmin_s) & (!!tmin); // 判断tmin=0且tmin!=0
 }
 /*
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
@@ -218,13 +216,14 @@ int negate(int x)
  */
 int isAsciiDigit(int x)
 {
+  int isP = (x >> 31) + 1;
   int mx = ~x + 1;
   int m1 = 0x2f + mx;
   int m2 = 0x39 + mx;
   int r = m1 ^ m2;
   r = r >> 0x1f;
   r = r + 1;
-  return !r;
+  return (!r) & isP;
 }
 /*
  * conditional - same as x ? y : z
@@ -248,10 +247,21 @@ int conditional(int x, int y, int z)
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y)
+// 核心思路：通过分支判断避免溢出的情况
 {
-  int m = x ^ y;
-  int r = (m + x) ^ y;
-  return !r;
+  // 1 先处理相等时的情况,x==y返回1
+  int cond1 = !(x ^ y);
+  // 2 获取x和y的符号位
+  int signX = x >> 31 & 1;
+  int signY = y >> 31 & 1;
+  // 3 x+ y- 的情况，返回0
+  int cond2 = signX | (!signY);
+  // 4 x- y+ 的情况，返回1
+  int cond3 = signX & (!signY);
+  // 5 同号，减法不可能溢出，直接进行减法y-x,判断其是否>=0
+  int y_m_c = ~x + 1 + y;
+  int cond4 = !(y_m_c >> 31 & 1);
+  return cond1 | (cond2 & cond3) | cond4;
 }
 // 4
 /*
@@ -263,10 +273,14 @@ int isLessOrEqual(int x, int y)
  *   Rating: 4
  */
 int logicalNeg(int x)
+// 核心思路：取负数再与自身做或运算，只有0的符号位仍然是0
+// tmin的负数是自身，负数与自身的符号位均为1
+// 其余数负数与自身的符号位必然是一个是0，一个是1
 {
   int mx = ~x + 1;
-  int r = mx ^ x;
-  return (r >> 31 + 1) && ((x >> 31) + 1);
+  int x_or_mx = mx | x;
+  int sign = x_or_mx >> 31; // 若x=0，sign=0，若想!=0,sign=111...
+  return sign + 1;
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
@@ -288,7 +302,6 @@ int howManyBits(int x)
   int ans2 = (~sym) & x;
   int n = ans1 + ans2;
 
-  int t = 0;
   int bool16 = !!(n >> 16) << 4;
   n = n >> bool16;
   int bool8 = !!(n >> 8) << 3;
@@ -408,7 +421,7 @@ unsigned floatPower2(int x)
   }
   else
   {
-    int n = -126-x;
-    return 1<<(23-n);
+    int n = -126 - x;
+    return 1 << (23 - n);
   }
 }
